@@ -1,6 +1,10 @@
-class Role
-  def initialize(source)
-    @source = source
+class Roles
+  class RoleNotFound < StandardError ; end
+  
+  class Base
+    def initialize(source)
+      @source = source
+    end
   end
 end
 
