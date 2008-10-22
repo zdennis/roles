@@ -28,7 +28,7 @@ class RoleShowingClassMethodCallback < Roles::Base
   
   module EmployeeFindCallbacks
     def after_find(record_or_records)
-      raise StandardError, "you can't do that!"
+      raise StandardError, "you can't do that #{record_or_records.name}!"
     end
   end
 end
@@ -43,38 +43,49 @@ end
 describe Roles, "can add interject find callbacks to an ActiveRecord class with a module defined inside a role's namespace" do
   it "adds callbacks when using the .first method" do
     staff_member = StaffMember.new("role showing class method callbacks")
+    employee = Employee.new :name => "stan"
+    Employee.should_receive(:first).and_return employee
     lambda { 
       staff_member.in_role("role showing class method callbacks").employees.first
-    }.should raise_error(StandardError, "you can't do that!")
+    }.should raise_error(StandardError, "you can't do that #{employee.name}!")
   end
 
   it "adds callbacks when using the .last method" do
     staff_member = StaffMember.new("role showing class method callbacks")
+    employee = Employee.new :name => "kyle"
+    Employee.should_receive(:last).and_return employee
     lambda { 
       staff_member.in_role("role showing class method callbacks").employees.last
-    }.should raise_error(StandardError, "you can't do that!")
+    }.should raise_error(StandardError, "you can't do that #{employee.name}!")
   end
 
   it "adds callbacks when using the .all method" do
     staff_member = StaffMember.new("role showing class method callbacks")
+    employees = [Employee.new]
+    def employees.name ; "stan, kyle, eric, and kenny" ; end
+    Employee.should_receive(:all).and_return employees
     lambda { 
       staff_member.in_role("role showing class method callbacks").employees.all
-    }.should raise_error(StandardError, "you can't do that!")    
+    }.should raise_error(StandardError, "you can't do that #{employees.name}!")    
   end
 
   it "adds callbacks when using the custom finder methods of ActiveRecord" do
     staff_member = StaffMember.new("role showing class method callbacks")
+    employee = Employee.new :name => "kenny"
+    Employee.should_receive(:find_by_name).and_return employee
     lambda { 
-      Employee.should_receive(:find_by_name).and_return Employee.new
       staff_member.in_role("role showing class method callbacks").employees.find_by_name("rich")
-    }.should raise_error(StandardError, "you can't do that!")    
+    }.should raise_error(StandardError, "you can't do that #{employee.name}!")    
   end
   
   it "adds callbacks when named scope methods are used" do
     staff_member = StaffMember.new("role showing class method callbacks")
-    lambda { 
+    employees = [Employee.new]
+    def employees.name ; "stan, kyle, eric, and kenny" ; end
+    Employee.should_receive(:all).and_return employees
+    lambda {
       staff_member.in_role("role showing class method callbacks").employees.descending.all
-    }.should raise_error(StandardError, "you can't do that!")
+    }.should raise_error(StandardError, "you can't do that #{employees.name}!")
   end
 end
 
