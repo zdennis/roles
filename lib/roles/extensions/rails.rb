@@ -1,4 +1,14 @@
 class Roles::Base
+  def self.after_find_for(klass, &blk)
+    module_name = "#{klass.name}FindCallbacks"
+    constant = self.const_set(module_name, Module.new)
+    constant.instance_eval do 
+      define_method(:after_find) do |*args|
+        blk.call *args
+      end
+    end
+  end
+  
   class Proxy < BlankSlate
     CALLBACK_METHOD_REGEXP = /^((all|first|last)|find_.*)$/
 
