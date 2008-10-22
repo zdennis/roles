@@ -1,6 +1,7 @@
 class Roles::Base
-
   class Proxy < BlankSlate
+    CALLBACK_METHOD_REGEXP = /^((all|first|last)|find_.*)$/
+
     def initialize(obj_to_proxy, proxy_source)
       @obj_to_proxy = obj_to_proxy
       @proxy_source = proxy_source
@@ -8,6 +9,13 @@ class Roles::Base
     
     def method_missing(method_name, *args, &blk)
       result = @obj_to_proxy.send method_name, *args, &blk
+
+      if @obj_to_proxy.respond_to?(:ancestors) && @obj_to_proxy.ancestors.include?(ActiveRecord::Base)
+        if method_name.to_s =~ CALLBACK_METHOD_REGEXP
+          find_and_execute_class_level_find_callbacks result
+        end
+      end
+
       if result.kind_of?(ActiveRecord::Base)
         find_and_mixin_custom_module_functionality result
         result
@@ -18,10 +26,25 @@ class Roles::Base
     
   private
     
-    def find_and_mixin_custom_module_functionality(object_to_extend)
-      module_name = "#{object_to_extend.class.name}Methods"
+    def find_and_mixin_custom_module_functionality(record)
+      module_name = "#{record.class.name}Methods"
       if @proxy_source.class.const_defined?(module_name)
-        object_to_extend.extend @proxy_source.class.const_get(module_name)
+        record.extend @proxy_source.class.const_get(module_name)
+      end
+    end
+    
+    def find_and_execute_class_level_find_callbacks(record_or_records)
+      if record_or_records.is_a?(Array)
+        namespace = record_or_records.first.class.name
+      else
+        namespace = record_or_records.class.name
+      end
+      module_name = "#{namespace}FindCallbacks"
+      if @proxy_source.class.const_defined?(module_name)
+        constant = @proxy_source.class.const_get(module_name)
+        if constant.instance_methods.include?("after_find")
+          Object.new.extend(constant).after_find record_or_records
+        end
       end
     end
     

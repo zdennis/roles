@@ -26,6 +26,7 @@ def load_rails_test_data
 end
 
 class Employee < ActiveRecord::Base
+  named_scope :descending, :order => "id DESC"
 end
 
 load_rails_test_database
