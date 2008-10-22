@@ -11,7 +11,7 @@ end
 
 class PaymentOperator < Roles::Base
   def employees
-    Proxy.new Employee, self
+    ActiveRecordProxy.new Employee, self
   end
 
   module EmployeeMethods
@@ -23,7 +23,7 @@ end
 
 class RoleShowingClassMethodCallback < Roles::Base
   def employees
-    Proxy.new Employee, self
+    ActiveRecordProxy.new Employee, self
   end
   
   module EmployeeFindCallbacks
@@ -47,7 +47,7 @@ end
 
 class RoleShowingDeclarativeClassMethodCallback < Roles::Base
   def employees
-    Proxy.new Employee, self
+    ActiveRecordProxy.new Employee, self
   end
   
   after_find :employee do |record, requestor|
@@ -70,7 +70,7 @@ end
 
 class NormalUser < Roles::Base
   def employees
-    Proxy.new Employee, self
+    ActiveRecordProxy.new Employee, self
   end
 end
 

@@ -26,7 +26,7 @@ class Roles::Base
   end
   
   
-  class Proxy < BlankSlate
+  class ActiveRecordProxy < BlankSlate
     CALLBACK_METHOD_REGEXP = /^((all|first|last)|find_.*)$/
 
     def initialize(obj_to_proxy, proxy_source, activerecord_class=nil)
@@ -46,7 +46,7 @@ class Roles::Base
         find_and_mixin_custom_module_functionality result
         result
       else
-        Proxy.new result, @proxy_source, @activerecord_class
+        ActiveRecordProxy.new result, @proxy_source, @activerecord_class
       end
     end
     
