@@ -1,13 +1,30 @@
 class Roles::Base
-  def self.after_find_for(klass, &blk)
-    module_name = "#{klass.name}FindCallbacks"
-    constant = self.const_set(module_name, Module.new)
-    constant.instance_eval do 
-      define_method(:after_find) do |*args|
-        blk.call *args
+  class << self
+    def after_find(model_sym, &blk)
+      install_callback :after_find, model_sym, &blk
+    end
+  
+    def after_find_collection(model_sym, &blk)
+      install_callback :after_find_collection, model_sym, &blk
+    end
+    
+    private
+    
+    def install_callback(method_name, model_sym, &blk)
+      module_name = "#{model_sym.to_s.classify}FindCallbacks"
+      constant = if self.const_defined?(module_name)
+        self.const_get(module_name)
+      else
+        self.const_set(module_name, Module.new)
       end
+      constant.instance_eval do 
+        define_method(method_name) do |*args|
+          blk.call *args
+        end
+      end          
     end
   end
+  
   
   class Proxy < BlankSlate
     CALLBACK_METHOD_REGEXP = /^((all|first|last)|find_.*)$/
@@ -49,14 +66,16 @@ class Roles::Base
       if method_name.to_s =~ CALLBACK_METHOD_REGEXP
         if record_or_records.is_a?(Array)
           namespace = record_or_records.first.class.name
+          dispatch_method = "after_find_collection"
         else
           namespace = record_or_records.class.name
+          dispatch_method = "after_find"
         end
         module_name = "#{namespace}FindCallbacks"
         if @proxy_source.class.const_defined?(module_name)
           constant = @proxy_source.class.const_get(module_name)
-          if constant.instance_methods.include?("after_find")
-            Object.new.extend(constant).after_find record_or_records, @proxy_source.source
+          if constant.instance_methods.include?(dispatch_method)
+            Object.new.extend(constant).send dispatch_method, record_or_records, @proxy_source.source
           end
         end
       end
