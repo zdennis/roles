@@ -29,9 +29,10 @@ class Roles::Base
   class Proxy < BlankSlate
     CALLBACK_METHOD_REGEXP = /^((all|first|last)|find_.*)$/
 
-    def initialize(obj_to_proxy, proxy_source)
+    def initialize(obj_to_proxy, proxy_source, activerecord_class=nil)
       @obj_to_proxy = obj_to_proxy
       @proxy_source = proxy_source
+      @activerecord_class = activerecord_class || @obj_to_proxy
     end
     
     def method_missing(method_name, *args, &blk)
@@ -45,7 +46,7 @@ class Roles::Base
         find_and_mixin_custom_module_functionality result
         result
       else
-        Proxy.new result, @proxy_source
+        Proxy.new result, @proxy_source, @activerecord_class
       end
     end
     
@@ -64,11 +65,10 @@ class Roles::Base
     
     def find_and_execute_class_level_find_callbacks_for method_name, record_or_records
       if method_name.to_s =~ CALLBACK_METHOD_REGEXP
+        namespace = @activerecord_class.name
         if record_or_records.is_a?(Array)
-          namespace = record_or_records.first.class.name
           dispatch_method = "after_find_collection"
         else
-          namespace = record_or_records.class.name
           dispatch_method = "after_find"
         end
         module_name = "#{namespace}FindCallbacks"

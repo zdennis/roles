@@ -28,11 +28,19 @@ class RoleShowingClassMethodCallback < Roles::Base
   
   module EmployeeFindCallbacks
     def after_find(record, requestor)
-      raise StandardError, "you can't do that #{record.name}!"
+      if record.nil?
+        raise StandardError, "you found nothing!"
+      else
+        raise StandardError, "you can't do that #{record.name}!"
+      end
     end
 
     def after_find_collection(records, requestor)
-      raise StandardError, "you can't do that #{records.name}!"
+      if records.empty?
+        raise StandardError, "you found nothing!"
+      else
+        raise StandardError, "you can't do that #{records.name}!"
+      end
     end
   end
 end
@@ -43,11 +51,19 @@ class RoleShowingDeclarativeClassMethodCallback < Roles::Base
   end
   
   after_find :employee do |record, requestor|
-    raise StandardError, "you can't do that #{record.name}!"
+    if record.nil?
+      raise StandardError, "you found nothing!"
+    else
+      raise StandardError, "you can't do that #{record.name}!"
+    end
   end
   
   after_find_collection :employee do |records, requestor|
-    raise StandardError, "you can't do that #{records.name}!"
+    if records.empty?
+      raise StandardError, "you found nothing!"
+    else
+      raise StandardError, "you can't do that #{records.name}!"
+    end
   end
 end
 
@@ -66,23 +82,24 @@ end
         @staff_member = StaffMember.new(role)
       end
   
-      it "adds callbacks when using the .first method" do
-        employee = Employee.new :name => "stan"
-        Employee.should_receive(:first).and_return employee
-        lambda { 
-          @staff_member.in_role(role).employees.first
-        }.should raise_error(StandardError, "you can't do that #{employee.name}!")
+      %w(first last find_by_custom_finder_methods).each do |find_method|
+        it "invokes find callbacks when using the .#{find_method} method" do
+          employee = Employee.new :name => "stan"
+          Employee.should_receive(find_method).and_return employee
+          lambda { 
+            @staff_member.in_role(role).employees.__send__ find_method
+          }.should raise_error(StandardError, "you can't do that #{employee.name}!")
+        end
+        
+        it "invokes the callback when a record is not found by #{find_method}" do
+          Employee.stub!(find_method).and_return nil
+          lambda { 
+            @staff_member.in_role(role).employees.__send__ find_method
+          }.should raise_error(StandardError, "you found nothing!")
+        end
       end
 
-      it "adds callbacks when using the .last method" do
-        employee = Employee.new :name => "kyle"
-        Employee.should_receive(:last).and_return employee
-        lambda { 
-          @staff_member.in_role(role).employees.last
-        }.should raise_error(StandardError, "you can't do that #{employee.name}!")
-      end
-
-      it "adds callbacks when using the .all method" do
+      it "invokes callbacks when records are found using .all" do
         employees = [Employee.new]
         def employees.name ; "stan, kyle, eric, and kenny" ; end
         Employee.should_receive(:all).and_return employees
@@ -91,38 +108,20 @@ end
         }.should raise_error(StandardError, "you can't do that #{employees.name}!")    
       end
 
-      it "adds callbacks when using the custom finder methods of ActiveRecord" do
-        employee = Employee.new :name => "kenny"
-        Employee.should_receive(:find_by_name).and_return employee
+      it "invokes the callback when an no records are found by .all" do
+        Employee.stub!(:all).and_return []
         lambda { 
-          @staff_member.in_role(role).employees.find_by_name("rich")
-        }.should raise_error(StandardError, "you can't do that #{employee.name}!")    
+          @staff_member.in_role(role).employees.all
+        }.should raise_error(StandardError, "you found nothing!")    
       end
-  
-      it "adds callbacks when named scope methods are used" do
+        
+      it "invokes callbacks when named scope methods are used" do
         employees = [Employee.new]
         def employees.name ; "stan, kyle, eric, and kenny" ; end
         Employee.should_receive(:all).and_return employees
         lambda {
           @staff_member.in_role(role).employees.descending.all
         }.should raise_error(StandardError, "you can't do that #{employees.name}!")
-      end
-  
-      it "doesn't invoke the callback when a record is not returned by .first, .last, or custom find methods" do
-        Employee.stub!(:first => nil, :last => nil, :find_by_something => nil)
-        lambda { 
-          @staff_member.in_role(role).employees.first
-          @staff_member.in_role(role).employees.last
-          @staff_member.in_role(role).employees.find_by_something
-        }.should_not raise_error
-      end
-
-      it "doesn't invoke the callback when an empty array is returned by .all or .find" do
-        Employee.stub!(:all => [], :find => [])
-        lambda { 
-          @staff_member.in_role(role).employees.all
-          @staff_member.in_role(role).employees.find(:all)
-        }.should_not raise_error
       end
     end
   end
