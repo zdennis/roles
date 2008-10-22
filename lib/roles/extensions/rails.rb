@@ -10,10 +10,8 @@ class Roles::Base
     def method_missing(method_name, *args, &blk)
       result = @obj_to_proxy.send method_name, *args, &blk
 
-      if @obj_to_proxy.respond_to?(:ancestors) && @obj_to_proxy.ancestors.include?(ActiveRecord::Base)
-        if method_name.to_s =~ CALLBACK_METHOD_REGEXP
-          find_and_execute_class_level_find_callbacks result
-        end
+      if proxy_object_is_ancestor_of? ActiveRecord::Base
+        find_and_execute_class_level_find_callbacks_for method_name, result
       end
 
       if result.kind_of?(ActiveRecord::Base)
@@ -25,6 +23,10 @@ class Roles::Base
     end
     
   private
+  
+    def proxy_object_is_ancestor_of?(klass)
+      @obj_to_proxy.respond_to?(:ancestors) && @obj_to_proxy.ancestors.include?(klass)
+    end
     
     def find_and_mixin_custom_module_functionality(record)
       module_name = "#{record.class.name}Methods"
@@ -33,20 +35,22 @@ class Roles::Base
       end
     end
     
-    def find_and_execute_class_level_find_callbacks(record_or_records)
-      if record_or_records.is_a?(Array)
-        namespace = record_or_records.first.class.name
-      else
-        namespace = record_or_records.class.name
-      end
-      module_name = "#{namespace}FindCallbacks"
-      if @proxy_source.class.const_defined?(module_name)
-        constant = @proxy_source.class.const_get(module_name)
-        if constant.instance_methods.include?("after_find")
-          Object.new.extend(constant).after_find record_or_records
+    def find_and_execute_class_level_find_callbacks_for method_name, record_or_records
+      if method_name.to_s =~ CALLBACK_METHOD_REGEXP
+        if record_or_records.is_a?(Array)
+          namespace = record_or_records.first.class.name
+        else
+          namespace = record_or_records.class.name
+        end
+        module_name = "#{namespace}FindCallbacks"
+        if @proxy_source.class.const_defined?(module_name)
+          constant = @proxy_source.class.const_get(module_name)
+          if constant.instance_methods.include?("after_find")
+            Object.new.extend(constant).after_find record_or_records
+          end
         end
       end
     end
-    
+
   end
 end

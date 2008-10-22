@@ -88,22 +88,22 @@ describe Roles, "can extend an ActiveRecord::Base instance with a module defined
     }.should raise_error(NoMethodError)
   end
   
-  it "extends mixin functionality when using the ActiveRecord::Base.first method" do
+  it "extends mixin functionality on an instance returned from .first method" do
     staff_member = StaffMember.new("payment operator")
     staff_member.in_role("payment operator").employees.first.foo.should == "foo"
   end
   
-  it "extends mixin functionality when using the ActiveRecord::Base.last method" do
+  it "extends mixin functionality on an instance returned from .last method" do
     staff_member = StaffMember.new("payment operator")
     staff_member.in_role("payment operator").employees.last.foo.should == "foo"
   end
 
-  it "extends mixin functionality when using the ActiveRecord::Base.all method" do
+  it "extends mixin functionality on an instance returned from .all method" do
     staff_member = StaffMember.new("payment operator")
     staff_member.in_role("payment operator").employees.all[0].foo.should == "foo"
   end
   
-  it "extends mixin functionality when using the ActiveRecord::Base.find methods" do
+  it "extends mixin functionality on an instance returned from .find methods" do
     staff_member = StaffMember.new("payment operator")
     employee = Employee.first
     staff_member.in_role("payment operator").employees.find(employee).foo.should == "foo"
