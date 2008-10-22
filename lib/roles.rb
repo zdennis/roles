@@ -1,7 +1,9 @@
 class Roles
   class RoleNotFound < StandardError ; end
-  
+
   class Base
+    attr_reader :source
+    
     def initialize(source)
       @source = source
     end

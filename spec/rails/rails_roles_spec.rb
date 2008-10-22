@@ -27,7 +27,7 @@ class RoleShowingClassMethodCallback < Roles::Base
   end
   
   module EmployeeFindCallbacks
-    def after_find(record_or_records)
+    def after_find(record_or_records, requestor)
       raise StandardError, "you can't do that #{record_or_records.name}!"
     end
   end

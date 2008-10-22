@@ -46,7 +46,7 @@ class Roles::Base
         if @proxy_source.class.const_defined?(module_name)
           constant = @proxy_source.class.const_get(module_name)
           if constant.instance_methods.include?("after_find")
-            Object.new.extend(constant).after_find record_or_records
+            Object.new.extend(constant).after_find record_or_records, @proxy_source.source
           end
         end
       end
