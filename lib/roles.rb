@@ -1,5 +1,5 @@
-class Roles
-  class RoleNotFound < StandardError ; end
+class Privileges 
+  class PrivilegeNotFound < StandardError ; end
 
   class Base
     attr_reader :source
@@ -7,6 +7,14 @@ class Roles
     def initialize(source)
       @source = source
     end
+  end
+end
+
+
+class Roles
+  class RoleNotFound < StandardError ; end
+
+  class Base < Privileges::Base
   end
 end
 

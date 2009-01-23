@@ -1,4 +1,4 @@
-class Roles::Base
+class Privileges::Base
   class << self
     def after_find(model_sym, &blk)
       install_callback :after_find, model_sym, &blk

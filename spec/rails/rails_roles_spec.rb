@@ -9,6 +9,16 @@ class StaffMember
   end
 end
 
+class StaffMemberWithPrivileges
+  include Roles::RoleMethods
+  attr_reader :privileges
+  
+  def initialize(*privileges)
+    @privileges = privileges
+  end
+end
+
+
 class PaymentOperator < Roles::Base
   def employees
     ActiveRecordProxy.new Employee, self
@@ -17,6 +27,18 @@ class PaymentOperator < Roles::Base
   module EmployeeMethods
     def foo
       "foo"
+    end
+  end
+end
+
+class Privileges::CrudThings < Privileges::Base
+  def employees
+    ActiveRecordProxy.new Employee, self
+  end
+
+  module EmployeeMethods
+    def baz
+      "baz"
     end
   end
 end
@@ -156,5 +178,38 @@ describe Roles, "can extend an ActiveRecord::Base instance with a module defined
     employee = Employee.first
     staff_member.in_role("payment operator").employees.find(employee).foo.should == "foo"
     staff_member.in_role("payment operator").employees.find_by_id(employee.id).foo.should == "foo"
+  end
+end
+
+
+describe Privileges, "can extend privilege functionality on an ActiveRecord::Base instance with a module defined inside a role's namespace" do
+  it "does not extend mixin functionality where there is no module defined" do
+    staff_member = StaffMemberWithPrivileges.new("crud_things")
+    employee = staff_member.with_privilege("crud_things").employees.first
+    lambda { 
+      employee.bar
+    }.should raise_error(NoMethodError)
+  end
+  
+  it "extends mixin functionality on an instance returned from .first method" do
+    staff_member = StaffMemberWithPrivileges.new("crud_things")
+    staff_member.with_privilege("crud_things").employees.first.baz.should == "baz"
+  end
+  
+  it "extends mixin functionality on an instance returned from .last method" do
+    staff_member = StaffMemberWithPrivileges.new("crud_things")
+    staff_member.with_privilege("crud_things").employees.last.baz.should == "baz"
+  end
+  
+  it "extends mixin functionality on an instance returned from .all method" do
+    staff_member = StaffMemberWithPrivileges.new("crud_things")
+    staff_member.with_privilege("crud_things").employees.all[0].baz.should == "baz"
+  end
+  
+  it "extends mixin functionality on an instance returned from .find methods" do
+    staff_member = StaffMemberWithPrivileges.new("crud_things")
+    employee = Employee.first
+    staff_member.with_privilege("crud_things").employees.find(employee).baz.should == "baz"
+    staff_member.with_privilege("crud_things").employees.find_by_id(employee.id).baz.should == "baz"
   end
 end
